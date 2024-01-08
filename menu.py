@@ -16,7 +16,7 @@ def run_menu():
     is_running = True
 
     button_positions = [(300, 200), (300, 300), (300, 400)]
-    buttons = [create_button(position, text) for position, text in zip(button_positions, ["Play", "Settings", "Quit"])]
+    buttons = [create_button(manager, position, text) for position, text in zip(button_positions, ["Play", "Settings", "Quit"])]
 
     while is_running:
         time_delta = clock.tick(60) / 1000.0

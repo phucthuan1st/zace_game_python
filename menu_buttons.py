@@ -1,21 +1,22 @@
 # menu_buttons.py
+import pygame
 import pygame_gui
 
-def create_button(position, text):
+def create_button(manager, position, text):
     return pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect(position, (200, 50)),
         text=text,
-        manager=None  # Manager will be set in the menu file
+        manager=manager
     )
 
 def handle_button_click(button, action):
-    if button == buttons[0]:
+    if button.text == "Play":
         print("Play button clicked")
         # Add play button functionality here
-    elif button == buttons[1]:
+    elif button.text == "Settings":
         print("Settings button clicked")
         # Add settings button functionality here
-    elif button == buttons[2]:
+    elif button.text == "Quit":
         print("Quit button clicked")
         action()
 
