@@ -21,5 +21,6 @@ def handle_button_click(button, action):
         action()
 
 def quit_game():
+    print("Quitting game...")
     global is_running
     is_running = False
