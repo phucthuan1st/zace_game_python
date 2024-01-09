@@ -4,13 +4,14 @@ from .base_state import BaseState
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 
 class SettingsState(BaseState):
-    def __init__(self, ui_manager):
+    def __init__(self, ui_manager, player_name):
         super().__init__()
         self.ui_manager = ui_manager
 
         # Load settings from storage (replace with your loading logic)
         self.sound_setting = 50  # Load initial sound setting (50%)
         self.server_address = "https://zacegame.nguyenphucthuan.id.vn"  # Load initial server address
+        self.player_name = player_name
 
         # Create UIPanel centered and sized as half of the screen
         panel_width = SCREEN_WIDTH // 2
@@ -56,15 +57,30 @@ class SettingsState(BaseState):
         )
         self.server_address_input.set_text(self.server_address)
 
+        self.name_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect(10, 170, panel_width - 40, 25),
+            text="Player Name:",
+            manager=self.ui_manager,
+            container=self.settings_panel,
+            object_id="name_label",
+        )
+        self.name_input = pygame_gui.elements.UITextEntryLine(
+            relative_rect=pygame.Rect(10, 200, panel_width - 20, 30),
+            manager=self.ui_manager,
+            container=self.settings_panel,
+            object_id="name_input",
+        )
+        self.name_input.set_text(self.player_name)
+
         self.save_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(10, panel_height - 90, panel_width - 40, 40),
+            relative_rect=pygame.Rect(10, panel_height - 110, panel_width - 30, 40),
             text="Save",
             manager=self.ui_manager,
             container=self.settings_panel,
             object_id="save_settings_button",
         )
         self.exit_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(10, panel_height - 40, panel_width - 40, 40),
+            relative_rect=pygame.Rect(10, panel_height - 60, panel_width - 30, 40),
             text="Exit",
             manager=self.ui_manager,
             container=self.settings_panel,
@@ -77,6 +93,7 @@ class SettingsState(BaseState):
 
         self.sound_setting = self.sound_slider.get_current_value()
         self.server_address = self.server_address_input.get_text()
+        self.player_name = self.name_input.get_text()
 
 
     def render(self, screen):

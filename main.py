@@ -3,15 +3,16 @@ import pygame_gui
 from states.splash_state import SplashState
 from states.main_menu_state import MainMenuState 
 from states.settings_state import SettingsState;
+from helpers.random_name_generator import generate_random_name
 # from states.game_state import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 
 class StateManager:
-    def __init__(self, ui_manager):
+    def __init__(self, ui_manager, player_name):
         self.states = {
             "SplashState": SplashState(),
             "MainMenuState": MainMenuState(ui_manager),
-            "SettingsState": SettingsState(ui_manager),
+            "SettingsState": SettingsState(ui_manager, player_name),
             #"GameState": GameState(),
         }
 
@@ -33,9 +34,11 @@ def main():
     clock = pygame.time.Clock()
     ui_manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    state_manager = StateManager(ui_manager)
     volume_percent = 50
     server_address = ""
+    player_name = generate_random_name()
+
+    state_manager = StateManager(ui_manager, player_name)
 
     # Initialize Pygame mixer for sound
     pygame.mixer.init()
@@ -69,7 +72,10 @@ def main():
                         volume_percent = settings_state.sound_setting
                         server_address = settings_state.server_address
 
-                        print(f'Update Sound to %d and server address to %s' % (volume_percent, server_address))
+                        print(f'Update Sound to {volume_percent} and server address to {server_address}')
+
+                        player_name = settings_state.player_name 
+                        print(f'Update Player to {player_name}')
                     
                     state_manager.change_state("MainMenuState")
 
