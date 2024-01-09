@@ -4,7 +4,7 @@ from states.splash_state import SplashState
 from states.main_menu_state import MainMenuState 
 from states.settings_state import SettingsState;
 from helpers.random_name_generator import generate_random_name
-# from states.game_state import GameState
+from states.game_state import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 
 class StateManager:
@@ -13,7 +13,6 @@ class StateManager:
             "SplashState": SplashState(),
             "MainMenuState": MainMenuState(ui_manager),
             "SettingsState": SettingsState(ui_manager, player_name),
-            #"GameState": GameState(),
         }
 
         self.current_state = self.states.get("SplashState")
@@ -42,8 +41,6 @@ def main():
 
     # Initialize Pygame mixer for sound
     pygame.mixer.init()
-
-    # Load the soundtrack
     soundtrack = pygame.mixer.Sound("assets/Soviet_March.mp3")
 
     running = True
@@ -55,7 +52,9 @@ def main():
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 # PLAY button event
                 if event.ui_object_id == "play_button":
-                    state_manager.change_state(GameState())
+                    state_manager.states["GameState"] = GameState(ui_manager, player_name, volume_percent, server_address)
+                    state_manager.change_state("GameState")
+                    state_manager.current_state.game_panel.show()
                
                 # SETTINGS button events
                 elif event.ui_object_id == "settings_button":
@@ -78,7 +77,15 @@ def main():
                         print(f'Update Player to {player_name}')
                     
                     state_manager.change_state("MainMenuState")
+                elif event.ui_object_id == "game_panel.exit_button":
 
+                    # cleanup
+                    game_state = state_manager.current_state
+                    game_state.game_panel.kill()
+                    del game_state
+
+                    # change back to main menu state
+                    state_manager.change_state("MainMenuState")
                 # QUIT button event
                 elif event.ui_object_id == "quit_button":
                     running = False

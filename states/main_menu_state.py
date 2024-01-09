@@ -17,7 +17,7 @@ class MainMenuState(BaseState):
 
         # Calculate button dimensions and spacing
         button_width = int(SCREEN_WIDTH * 0.25)  # 20% of screen width
-        button_height = int(SCREEN_HEIGHT * 0.05)  # 5% of screen height
+        button_height = int(SCREEN_HEIGHT * 0.075)  # 5% of screen height
         button_spacing = int(SCREEN_HEIGHT * 0.03)  # 2% of screen height
 
         # Calculate button positions based on logo and spacing
