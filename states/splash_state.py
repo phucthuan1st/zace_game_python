@@ -5,8 +5,13 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 class SplashState(BaseState):
     def __init__(self):
         super().__init__()
-        self.logo_image = pygame.image.load("assets/zacetankbattle-logo-transparent.png")
         self.timer = 0
+
+        unscaled_logo = pygame.image.load("assets/zacetankbattle-logo-transparent.png")
+        scaling_factor = 0.2  # Adjust as needed
+        self.logo_image = pygame.transform.scale(
+            unscaled_logo, (int(unscaled_logo.get_width() * scaling_factor), int(unscaled_logo.get_height() * scaling_factor))
+        )
 
     def update(self, dt):
         self.timer += dt
@@ -16,11 +21,8 @@ class SplashState(BaseState):
     def render(self, screen):
         screen.fill((0, 0, 0))  # Black background
 
-        # Scale the logo image to half screen size
-        scaled_logo = pygame.transform.scale(self.logo_image, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-
         # Center the scaled logo on the screen
-        screen.blit(scaled_logo, (
-            (SCREEN_WIDTH - scaled_logo.get_width()) // 2,  # Center horizontally
-            (SCREEN_HEIGHT - scaled_logo.get_height()) // 2  # Center vertically
+        screen.blit(self.logo_image, (
+            (SCREEN_WIDTH - self.logo_image.get_width()) // 2,  # Center horizontally
+            (SCREEN_HEIGHT - self.logo_image.get_height()) // 2  # Center vertically
         ))
