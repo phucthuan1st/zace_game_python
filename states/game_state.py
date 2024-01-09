@@ -1,3 +1,4 @@
+import socket
 import pygame
 import pygame_gui
 from pygame import sprite
@@ -10,6 +11,7 @@ class GameState(BaseState):
         self.volume_percent = volume_percent
         self.server_address = server_address
         self.ui_manager = ui_manager
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Create UIPanel covering the entire screen
         panel_width = SCREEN_WIDTH
@@ -56,3 +58,22 @@ class GameState(BaseState):
 
     def render(self, screen):
         self.ui_manager.draw_ui(screen)
+
+    def handle_create_room(self, event):
+        try:
+            self.client_socket.connect(self.server_address)
+            self.client_socket.sendall(b"create_queue")
+            response = self.client_socket.recv(1024).decode()
+            response_data = json.loads(response)
+            queue_id = response_data["queue_id"]
+
+            # Handle successful queue creation (e.g., display a message or transition to a room state)
+            print(f"Created queue with ID: {queue_id}")
+
+            # Example: Transition to a room state
+            self.ui_manager.clear_and_reset()  # Clear current UI elements
+            self.ui_manager.set_current_state("room_state", queue_id)  # Set the new state
+
+        except Exception as e:
+            print(f"Error creating queue: {e}")
+            # Handle errors (e.g., display an error message)

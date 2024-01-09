@@ -1,7 +1,7 @@
 import pygame_gui
 import pygame
 from .base_state import BaseState
-from constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from constants import SCREEN_HEIGHT, SCREEN_WIDTH, SERVER_ADDRESS
 
 class SettingsState(BaseState):
     def __init__(self, ui_manager, player_name):
@@ -10,7 +10,7 @@ class SettingsState(BaseState):
 
         # Load settings from storage (replace with your loading logic)
         self.sound_setting = 50  # Load initial sound setting (50%)
-        self.server_address = "https://zacegame.nguyenphucthuan.id.vn"  # Load initial server address
+        self.server_address = SERVER_ADDRESS  # Load initial server address
         self.player_name = player_name
 
         # Create UIPanel centered and sized as half of the screen
