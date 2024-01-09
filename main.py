@@ -37,6 +37,12 @@ def main():
     volume_percent = 50
     server_address = ""
 
+    # Initialize Pygame mixer for sound
+    pygame.mixer.init()
+
+    # Load the soundtrack
+    soundtrack = pygame.mixer.Sound("assets/Soviet_March.mp3")
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -80,6 +86,13 @@ def main():
             # QUIT event handler
             elif event.type == pygame.QUIT:
                 running = False
+
+        # Set the soundtrack's volume based on volume_percent
+        soundtrack.set_volume(volume_percent / 100)
+
+        # Play the soundtrack in a loop (if not already playing)
+        if not pygame.mixer.get_busy():
+            soundtrack.play(-1)
 
         state_manager.update(float(clock.tick(FPS) / 1000))
         state_manager.render(screen)
