@@ -151,5 +151,23 @@
       "width": 540,
       "height": 409
     }
+  },
+  "tier3_front-machinegun": {
+    "type": "machinegun",
+    "rect": {
+      "x": 477,
+      "y": 910,
+      "width": 84,
+      "height": 117
+    }
+  },
+  "tier3_rear-machinegun": {
+    "type": "machinegun",
+    "rect": {
+      "x": 479,
+      "y": 1195,
+      "width": 84,
+      "height": 117
+    }
   }
 }
