@@ -34,6 +34,8 @@ def main():
     ui_manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     state_manager = StateManager(ui_manager)
+    volume_percent = 50
+    server_address = ""
 
     running = True
     while running:
@@ -42,7 +44,6 @@ def main():
 
             # pygame_gui button event handlers
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                print(event.ui_object_id)
                 # PLAY button event
                 if event.ui_object_id == "play_button":
                     state_manager.change_state(GameState())
@@ -59,7 +60,10 @@ def main():
                     
                     if event.ui_object_id == "settings_panel.save_settings_button":
                         # TODO: Save settings to storage
-                        pass
+                        volume_percent = settings_state.sound_setting
+                        server_address = settings_state.server_address
+
+                        print(f'Update Sound to %d and server address to %s' % (volume_percent, server_address))
                     
                     state_manager.change_state("MainMenuState")
 
