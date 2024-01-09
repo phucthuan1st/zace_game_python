@@ -1,0 +1,155 @@
+{
+  "tier1_prototype": {
+    "type": "prototype",
+    "rect": {
+      "x": 102,
+      "y": 75,
+      "width": 235,
+      "height": 321
+    }
+  },
+  "tier2_prototype": {
+    "type": "prototype",
+    "rect": {
+      "x": 88,
+      "y": 518,
+      "width": 262,
+      "height": 324
+    }
+  },
+  "tier3_prototype": {
+    "type": "prototype",
+    "rect": {
+      "x": 48,
+      "y": 895,
+      "width": 343,
+      "height": 435
+    }
+  },
+  "tier1_body": {
+    "type": "body",
+    "rect": {
+      "x": 686,
+      "y": 112,
+      "width": 235,
+      "height": 278
+    }
+  },
+  "tier2_body": {
+    "type": "body",
+    "rect": {
+      "x": 673,
+      "y": 541,
+      "width": 262,
+      "height": 299
+    }
+  },
+  "tier3_body": {
+    "type": "body",
+    "rect": {
+      "x": 641,
+      "y": 922,
+      "width": 343,
+      "height": 388
+    }
+  },
+  "tier1_turret": {
+    "type": "turret",
+    "rect": {
+      "x": 1041,
+      "y": 69,
+      "width": 125,
+      "height": 266
+    }
+  },
+  "tier2_turret": {
+    "type": "turret",
+    "rect": {
+      "x": 1036,
+      "y": 516,
+      "width": 156,
+      "height": 267
+    }
+  },
+  "tier3_turret": {
+    "type": "turret",
+    "rect": {
+      "x": 1087,
+      "y": 877,
+      "width": 160,
+      "height": 330
+    }
+  },
+  "tier1_missile": {
+    "type": "missile",
+    "rect": {
+      "x": 411,
+      "y": 412,
+      "width": 20,
+      "height": 67
+    }
+  },
+  "tier2_missile": {
+    "type": "missile",
+    "rect": {
+      "x": 481,
+      "y": 404,
+      "width": 38,
+      "height": 92
+    }
+  },
+  "tier3_missile": {
+    "type": "missile",
+    "rect": {
+      "x": 559,
+      "y": 412,
+      "width": 27,
+      "height": 95
+    }
+  },
+  "tier1_chain": {
+    "type": "chain",
+    "rect": {
+      "x": 1300,
+      "y": 729,
+      "width": 260,
+      "height": 301
+    }
+  },
+  "tier2_chain": {
+    "type": "chain",
+    "rect": {
+      "x": 1300,
+      "y": 1069,
+      "width": 260,
+      "height": 301
+    }
+  },
+  "tier3_chain": {
+    "type": "chain",
+    "rect": {
+      "x": 1612,
+      "y": 807,
+      "width": 363,
+      "height": 438
+    }
+  },
+  "tierS_wings": {
+    "type": "wings",
+    "rect": {
+      "x": 1383,
+      "y": 38,
+      "width": 530,
+      "height": 228
+    }
+  },
+  "tierSSS_wings": {
+    "type": "wings",
+    "rect": {
+      "x": 1378,
+      "y": 309,
+      "width": 540,
+      "height": 409
+    }
+  }
+}
