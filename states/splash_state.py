@@ -15,7 +15,7 @@ class SplashState(BaseState):
 
     def update(self, dt):
         self.timer += dt
-        if self.timer >= 1.5:  # Switch to MainMenuState after 1.5 seconds
+        if self.timer >= 2.0:  # Switch to MainMenuState after 1.5 seconds
             pygame.event.post(pygame.event.Event(pygame.USEREVENT, {"state":"MainMenuState"}))
 
     def render(self, screen):
