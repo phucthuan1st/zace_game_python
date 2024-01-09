@@ -38,8 +38,11 @@ def main():
     running = True
     while running:
         for event in pygame.event.get():
+            ui_manager.process_events(event=event)
+
             # pygame_gui button event handlers
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                print(event.ui_object_id)
                 # PLAY button event
                 if event.ui_object_id == "play_button":
                     state_manager.change_state(GameState())
@@ -47,12 +50,17 @@ def main():
                 # SETTINGS button events
                 elif event.ui_object_id == "settings_button":
                     state_manager.change_state("SettingsState")
-                    state_manager.current_state.is_active = True
+                    state_manager.current_state.settings_panel.show()
 
-                elif event.ui_object_id == "save_settings_button":
-                    state_manager.change_state("MainMenuState")
-
-                elif event.ui_object_id == "exit_settings_button":
+                elif event.ui_object_id == "settings_panel.save_settings_button" or event.ui_object_id == "settings_panel.exit_settings_button":
+                    # Access and modify the SettingsState instance
+                    settings_state = state_manager.current_state  # Assuming current state is SettingsState
+                    settings_state.settings_panel.hide()
+                    
+                    if event.ui_object_id == "settings_panel.save_settings_button":
+                        # TODO: Save settings to storage
+                        pass
+                    
                     state_manager.change_state("MainMenuState")
 
                 # QUIT button event
@@ -68,8 +76,6 @@ def main():
             # QUIT event handler
             elif event.type == pygame.QUIT:
                 running = False
-
-            ui_manager.process_events(event=event)
 
         state_manager.update(float(clock.tick(FPS) / 1000))
         state_manager.render(screen)

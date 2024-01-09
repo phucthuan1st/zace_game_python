@@ -8,7 +8,7 @@ class MainMenuState(BaseState):
         super().__init__()
         self.ui_manager = ui_manager
 
-# Load and scale logo
+        # Load and scale logo
         unscaled_logo = pygame.image.load("assets/zacetankbattle-logo-transparent.png")
         scaling_factor = 0.15  # Adjust as needed
         self.logo_image = pygame.transform.scale(
