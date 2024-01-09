@@ -70,8 +70,13 @@ class StateManager:
                 print(f'Update Player to {self.player_name}')
             
             self.change_state("MainMenuState")
-        elif event.ui_object_id == "game_panel.exit_button":
 
+        # GAME buttons events
+        elif event.ui_object_id == "game_panel.create_room_button":
+            # cleanup
+            game_state = self.current_state
+            game_state.handle_create_room()
+        elif event.ui_object_id == "game_panel.exit_button":
             # cleanup
             game_state = self.current_state
             game_state.game_panel.kill()
@@ -79,6 +84,7 @@ class StateManager:
 
             # change back to main menu state
             self.change_state("MainMenuState")
+
         # QUIT button event
         elif event.ui_object_id == "quit_button":
             self.is_running = False

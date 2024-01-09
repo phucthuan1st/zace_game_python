@@ -55,7 +55,9 @@ class SettingsState(BaseState):
             container=self.settings_panel,
             object_id="server_address_input",
         )
-        self.server_address_input.set_text(self.server_address)
+
+        (host, port) = self.server_address
+        self.server_address_input.set_text(f"{host}:{port}")
 
         self.name_label = pygame_gui.elements.UILabel(
             relative_rect=pygame.Rect(10, 170, panel_width - 40, 25),
@@ -92,8 +94,23 @@ class SettingsState(BaseState):
         self.ui_manager.update(time_delta=dt)
 
         self.sound_setting = self.sound_slider.get_current_value()
-        self.server_address = self.server_address_input.get_text()
         self.player_name = self.name_input.get_text()
+
+        # Assuming self.server_address_input.get_text() contains a string in the format "host:port"
+        address_str = self.server_address_input.get_text()
+
+        # Split the string into host and port
+        host, port = address_str.split(':')
+
+        # Convert the port to an integer
+        port = int(port)
+
+        # Create the AF_INET address tuple
+        server_address = (host, port)
+
+        # Now, server_address is a valid AF_INET address tuple
+        self.server_address = server_address
+
 
 
     def render(self, screen):

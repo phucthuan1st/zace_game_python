@@ -1,4 +1,5 @@
 import socket
+import json
 import pygame
 import pygame_gui
 from pygame import sprite
@@ -59,7 +60,7 @@ class GameState(BaseState):
     def render(self, screen):
         self.ui_manager.draw_ui(screen)
 
-    def handle_create_room(self, event):
+    def handle_create_room(self):
         try:
             self.client_socket.connect(self.server_address)
             self.client_socket.sendall(b"create_queue")
@@ -71,8 +72,8 @@ class GameState(BaseState):
             print(f"Created queue with ID: {queue_id}")
 
             # Example: Transition to a room state
-            self.ui_manager.clear_and_reset()  # Clear current UI elements
-            self.ui_manager.set_current_state("room_state", queue_id)  # Set the new state
+            # self.ui_manager.clear_and_reset()  # Clear current UI elements
+            # self.ui_manager.set_current_state("room_state", queue_id)  # Set the new state
 
         except Exception as e:
             print(f"Error creating queue: {e}")
