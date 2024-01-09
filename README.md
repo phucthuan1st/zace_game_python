@@ -31,14 +31,24 @@ Follow these steps to get the game up and running on your local machine:
    python3 -m pip install -r requirements.txt
    ```
 
-3. **Run the Game:**
-
-   ```bash
-   python main.py
-   ```
-
 4. **Multiplayer Mode:**
    To experience the multiplayer mode, ensure that you have an internet connection and navigate to the multiplayer section in the game.
+
+## Server and Client
+
+- **Server:**
+  The server for the multiplayer functionality is implemented in `server.py`. Run the server before starting the game.
+
+  ```bash
+  python server.py
+  ```
+
+- **Client:**
+  The client is implemented in `app.py`. Run the client to connect to the multiplayer server.
+
+  ```bash
+  python app.py
+  ```
 
 ## Contributions
 
@@ -54,3 +64,6 @@ This project is licensed under the [MIT License](LICENSE), ensuring an open and 
 - Pygame community for providing a fantastic framework for game development in Python.
 
 Enjoy the game, team up in multiplayer mode, and happy coding!
+```
+
+Feel free to customize any details as needed for your specific implementation.
