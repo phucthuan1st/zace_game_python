@@ -38,7 +38,33 @@ class MapGrid(pygame.sprite.Sprite):
         self.cells.draw(self.image)
 
 class TankSprite(pygame.sprite.Sprite):
-    def __init__(self, surface, pos_x, pos_y):
+    def __init__(self, image, x, y, initial_rotation=0):
+        super().__init__()
+
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.rotation = initial_rotation  # Initial rotation angle
+
+        self.rotate(self.rotation)
+
+    def rotate(self, angle):
+        # Rotate the tank image
+        self.image = pygame.transform.rotate(self.image, angle)
+        self.rotation += angle
+
+
+class BulletSprite(pygame.sprite.Sprite):
+    def __init__(self, surface, pos_x, pos_y, initial_rotation=0):
         super().__init__()
         self.image = pygame.transform.scale(surface, (CELL_SIZE, CELL_SIZE))
         self.rect = self.image.get_rect(topleft=(pos_x, pos_y))
+        self.rotation = initial_rotation  # Initial rotation angle
+
+        self.rotate(self.rotation)
+
+    def rotate(self, angle):
+        # Rotate the tank image
+        self.image = pygame.transform.rotate(self.image, angle)
+        self.rotation += angle

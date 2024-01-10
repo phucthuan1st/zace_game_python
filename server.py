@@ -2,6 +2,7 @@ import grpc
 import logging
 import random
 import time
+import copy
 from concurrent import futures
 
 import hashlib
@@ -15,23 +16,56 @@ from constants import *
 
 NUMBER_OF_CELL = SCREEN_HEIGHT // CELL_SIZE
 
+class Bullet:
+    def __init__(self, owner_id, position, direction):
+        self.owner_id = owner_id
+        self.position = position
+        self.direction = direction
+        self.speed = 25  # Adjust the speed as needed
+        self.distance_traveled = 0  # Track distance traveled by the bullet
+
 class MatchState:
     def __init__(self):
         self.tanks = []
-        self.bullets = []
+        self.bullets = [] 
         self.walls = []
         self.scores = {}
 
     def update(self, events):
-        # TODO: Implement specific game logic here
-        pass
+        # Move bullets
+        for bullet in self.bullets:
+            self.move_bullet(bullet)
+
+        # TODO: Implement other game logic here
+
+    def move_bullet(self, bullet):
+        # Update bullet position based on its direction and speed
+        if bullet.direction == "up":
+            bullet.position.y -= bullet.speed
+        elif bullet.direction == "down":
+            bullet.position.y += bullet.speed
+        elif bullet.direction == "left":
+            bullet.position.x -= bullet.speed
+        elif bullet.direction == "right":
+            bullet.position.x += bullet.speed
+
+        bullet.distance_traveled += bullet.speed
+
+        # Check for collisions or out-of-bounds and handle accordingly
+        # ...
+
+        # You may also want to handle bullet lifespan and remove it when needed
+        # ...
+        if bullet.distance_traveled > SCREEN_HEIGHT:
+            self.bullets.remove(bullet)
+            print(f"Bullet discarded: Owner - {bullet.owner_id}, Distance Traveled - {bullet.distance_traveled}")
 
 class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
     def __init__(self):
         self.map_grid = generate_map(SCREEN_HEIGHT // CELL_SIZE, SCREEN_HEIGHT // CELL_SIZE)
-        self.game_state = MatchState()  # Centralized game state
+        self.match_state = MatchState()  # Centralized game state
         self.player_tanks = {}
-        self._game_state_streams = {}  # Track open player streams
+        self._match_state_streams = {}  # Track open player streams
 
     def GetMapGrid(self, request, context):
         # Construct and return the map grid message
@@ -60,8 +94,8 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         logging.info(f"Player joined: Player ID - {player_id}, Player Name - {request.player_name}")
 
         # Construct and return the initial game state
-        initial_game_state = self.construct_game_state()
-        yield initial_game_state
+        initial_match_state = self.construct_match_state()
+        yield initial_match_state
 
         # Start bidirectional streaming for real-time updates
         try:
@@ -70,20 +104,13 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
                 # Implement your game state update logic
                 # ...
 
-                # Implement your event handling logic
-                # events = self.process_events()
-                # for event in events:
-                #     event_message = self.convert_event_to_message(event)
-                #     # Broadcast event to all clients
-                #     stream_context.send(event_message)
-
                 # Yield the updated game state
-                updated_game_state = self.construct_game_state()
+                updated_match_state = self.construct_match_state()
                 
-                yield updated_game_state
+                yield updated_match_state
 
                 # Sleep for a short duration to control the streaming rate
-                time.sleep(0.1)
+                time.sleep(0.05)
 
         except grpc.RpcError as e:
             print(f"Client disconnected: {e}")
@@ -97,11 +124,6 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         if player_id in self.player_tanks:
             del self.player_tanks[player_id]
 
-        print(self.player_tanks)
-
-        # Add additional cleanup logic for other entities associated with the player
-        # ...
-
     def SendAction(self, request, context):
         player_id = request.player_id
 
@@ -111,9 +133,6 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         elif request.action_type == "shoot":
             # Handle tank shooting
             self.shoot_bullet(player_id, request.direction)
-
-        # Update the game state based on other actions as needed
-        # ...
 
         # Return an empty response
         return zace_tank_battle_pb2.Empty()
@@ -147,28 +166,44 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
                 tank.direction = direction
 
     def shoot_bullet(self, player_id, direction):
-        # Implement bullet shooting logic
-        # Create a new bullet, update the game state, and handle collisions
-        # ...
-        pass
+        print(f"Player {player_id} call for shoot bullet")
+        if player_id in self.player_tanks:
+            tank = self.player_tanks[player_id]
 
-    def process_events(self):
-        # Implement your event processing logic
-        # ...
+            # Check if the player has already shot a bullet that is not discarded
+            if any(bullet.owner_id == player_id and bullet.distance_traveled <= SCREEN_HEIGHT // 2 for bullet in self.match_state.bullets):
+                print(f"Player {player_id} cannot shoot another bullet until the previous one is discarded.")
+                return
 
-        # Return a list of events
-        return events
+            bullet_position = copy.deepcopy(tank.position)
 
-    def construct_game_state(self):
+            # Create a new bullet at the tank's position and in the specified direction
+            bullet = Bullet(player_id, bullet_position, direction)
+
+            # Add the bullet to the list
+            self.match_state.bullets.append(bullet)
+
+    def construct_match_state(self):
         # Implement your logic to construct the game state message
         game_state_message = zace_tank_battle_pb2.GameState()
+
+        # Update the game state based on other actions as needed
+        self.match_state.update(None)
         
         # Populate the message with tanks, bullets, walls, scores, etc.
         for tank in self.player_tanks.values():
             game_state_message.tanks.append(tank)
 
+        # Populate the message with bullets
+        for bullet in self.match_state.bullets:
+            bullet_message = zace_tank_battle_pb2.Bullet(
+                owner_id=bullet.owner_id,
+                position=bullet.position,
+                direction=bullet.direction
+            )
+            game_state_message.bullets.append(bullet_message)
+
         # Include other game state components as needed
-        # ...
 
         return game_state_message
 

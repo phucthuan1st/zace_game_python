@@ -17,10 +17,13 @@ from assets.Sprites import *
 class GameState(BaseState):
     def __init__(self, ui_manager, player_name, volume_percent, server_address):
         self.player_name = player_name
+
         self.volume_percent = volume_percent
         self.server_address = server_address
         self.ui_manager = ui_manager
+
         self.tank_group = pygame.sprite.Group()
+        self.bullet_group = pygame.sprite.Group()
         self.map_group = pygame.sprite.Group()
 
         # Create a gRPC channel and stub
@@ -96,35 +99,78 @@ class GameState(BaseState):
             pygame.K_SPACE: "shoot",
         }
 
+        self.tank_direction = "up"
+
     def process_match_state(self, match_state):
+        # Get the rect for the 'tier1_prototype' sprite
+        tank_sprite_data = self.sprite_sheet_data["tier3_prototype"]
+        bullet_sprite_data = self.sprite_sheet_data["tier2_missile"]
+
+        # Create a surface with the specified rect from the sprite sheet
+        tank_surface = self.spriteSheet.get_sprite(
+            tank_sprite_data["rect"]["x"], 
+            tank_sprite_data["rect"]["y"],
+            tank_sprite_data["rect"]["width"], 
+            tank_sprite_data["rect"]["height"]
+        )
+
+        bullet_surface = self.spriteSheet.get_sprite(
+            bullet_sprite_data["rect"]["x"], 
+            bullet_sprite_data["rect"]["y"],
+            bullet_sprite_data["rect"]["width"], 
+            bullet_sprite_data["rect"]["height"]
+        )
+
         # Process the received game state
         for tank in match_state.tanks:
-
-            # Get the rect for the 'tier1_prototype' sprite
-            sprite_data = self.sprite_sheet_data["tier1_prototype"]
-
-            # Create a surface with the specified rect from the sprite sheet
-            tank_surface = self.spriteSheet.get_sprite(
-                sprite_data["rect"]["x"], 
-                sprite_data["rect"]["y"],
-                sprite_data["rect"]["width"], 
-                sprite_data["rect"]["height"]
-            )
 
             # Resize the tank sprite if needed
             tank_surface = pygame.transform.scale(tank_surface, (CELL_SIZE, CELL_SIZE))
 
+            # Determine the initial rotation based on tank's direction
+            initial_rotation = 0
+            if tank.direction == "left":
+                initial_rotation = 90
+            elif tank.direction == "down":
+                initial_rotation = 180
+            elif tank.direction == "right":
+                initial_rotation = 270
+
             # Display the tank sprite on the screen
-            self.tank_group.add(TankSprite(tank_surface, tank.position.x, tank.position.y))
+            self.tank_group.add(TankSprite(tank_surface, tank.position.x, tank.position.y, initial_rotation))
+
+        # Process bullets
+        for bullet in match_state.bullets:
+
+            # Determine the initial rotation based on tank's direction
+            initial_rotation = 0
+            if bullet.direction == "left":
+                initial_rotation = 90
+            elif bullet.direction == "down":
+                initial_rotation = 180
+            elif bullet.direction == "right":
+                initial_rotation = 270
+
+            # Resize the tank sprite if needed
+            bullet_surface = pygame.transform.scale(bullet_surface, (CELL_SIZE // 3, CELL_SIZE))
+
+            # Display the bullet sprite on the screen
+            self.bullet_group.add(BulletSprite(bullet_surface, bullet.position.x, bullet.position.y, initial_rotation))
 
     def update(self, dt):
         self.ui_manager.update(time_delta=dt)
         self.map_group.update(time_delta=dt)
+
         self.tank_group.empty()
+        self.bullet_group.empty()
+    
         try:
             # Get the initial game state after joining
             self.match_state = next(self.game_stream)
             self.process_match_state(self.match_state)
+
+            # Update sprite groups
+            self.bullet_group.update(time_delta=dt)
             self.tank_group.update(time_delta=dt)
         except grpc.RpcError as e:
             print(f"Error during game streaming: {e}")
@@ -132,6 +178,7 @@ class GameState(BaseState):
     def render(self, screen):
         self.ui_manager.draw_ui(screen)
         self.map_group.draw(screen)
+        self.bullet_group.draw(screen)
         self.tank_group.draw(screen)
 
     def handle_keypress(self, key):
@@ -151,4 +198,18 @@ class GameState(BaseState):
                 action_type="move",
                 direction=direction
             )
+
+            self.tank_direction = direction
             self.stub.SendAction(move_action)
+        elif key == pygame.K_SPACE:
+            # Generate player_id as SHA-256 hash of player_name
+            player_name_bytes = self.player_name.encode('utf-8')
+            player_id = hashlib.sha256(player_name_bytes).hexdigest()
+            
+            # Send the shoot action to the server
+            shoot_action = zace_tank_battle_pb2.PlayerAction(
+                player_id=player_id,
+                action_type="shoot",
+                direction=self.tank_direction
+            )
+            self.stub.SendAction(shoot_action)
