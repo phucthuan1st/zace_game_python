@@ -1,7 +1,6 @@
 import pygame
 import pygame_gui
 
-from states.room_state import RoomState
 from states.game_state import GameState
 from states.splash_state import SplashState
 from states.settings_state import SettingsState
@@ -40,17 +39,8 @@ class StateManager:
             new_state = event.dict.get('state')
             
             if new_state is not None:
-                if new_state == "RoomState":
-                    game_state = self.current_state
-
-                    client_socket = game_state.client_socket
-                    queue_id = event.dict.get('queue_id')
-
-                    self.states[new_state] = RoomState(self.ui_manager, client_socket, queue_id)
-                    self.current_state = self.states[new_state]
-
-                    game_state.game_panel.hide()
-                    self.current_state.room_panel.show()
+                if new_state == "MatchState":
+                    pass
                 else:
                     self.change_state(new_state)
         elif event.type == pygame.QUIT:
@@ -86,29 +76,18 @@ class StateManager:
             self.change_state("MainMenuState")
 
         # GAME buttons events
-        elif event.ui_object_id == "game_panel.create_room_button":
+        elif event.ui_object_id == "game_panel.enter_room_button":
             # cleanup
             game_state = self.current_state
-            game_state.handle_create_room()
+            game_state.handle_enter_room()
         elif event.ui_object_id == "game_panel.exit_button":
             # cleanup
             game_state = self.current_state
-            game_state.client_socket.close()
             game_state.game_panel.kill()
             del game_state
 
             # change back to main menu state
             self.change_state("MainMenuState")
-
-        elif event.ui_object_id == "room_panel.leave_room_button":
-            room_state = self.current_state
-            room_state.handle_leave_room()
-            room_state.room_panel.kill()
-
-            del room_state
-            # change back to main menu state
-            self.change_state("GameState")
-            self.current_state.game_panel.show()
 
         # QUIT button event
         elif event.ui_object_id == "quit_button":

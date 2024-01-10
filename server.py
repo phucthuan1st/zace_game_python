@@ -1,110 +1,134 @@
-import socket
-import threading
-import json
+import grpc
 import logging
+import random
+from concurrent import futures
 
-HOST = '127.0.0.1'
-PORT = 65432
-queues = {}
+from helpers.generate_map import generate_map
 
-def handle_client(client_socket, address):
-    print(f"Connected by {address}")
+import zace_tank_battle_pb2
+import zace_tank_battle_pb2_grpc
 
-    try:
+from constants import *
+
+class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
+
+    def __init__(self):
+        NUMBER_OF_CELL = SCREEN_HEIGHT // CELL_SIZE
+
+        self.map_grid = generate_map(NUMBER_OF_CELL, NUMBER_OF_CELL)  # Generate the map once
+        self.player_tanks = {}  # Track connected tanks (users)
+        self.next_player_id = 1  # Assign unique IDs to joining tanks
+
+    def GetMapGrid(self, request, context):
+        map_grid_message = zace_tank_battle_pb2.MapGrid()
+
+        for row in self.map_grid:
+            map_row = zace_tank_battle_pb2.Row()
+            for cell in row:
+                map_row.cells.append(cell)
+
+            map_grid_message.rows.append(map_row)
+
+        return map_grid_message
+
+
+    def JoinGame(self, request, context):
+        logging.info(f"Player {request.player_name} is joining the game.")
+        player_id = self.next_player_id
+        self.next_player_id += 1
+
+        # Create a new Tank object for the joining player
+        player_tank = zace_tank_battle_pb2.Tank(
+            id=player_id,
+            player_name=request.player_name,
+            health=10,  # Set initial health
+            position=self._find_spawn_point(),  # Assign a spawn point
+            direction="up"  # Set initial direction
+        )
+        self.player_tanks[player_id] = player_tank
+
+        # Add the player's tank to the game state
+        self._add_tank_to_game_state(player_tank)
+
+        # Broadcast the updated game state to all connected players
+        updated_game_state = self._create_game_state_message()
+        for stream in self._game_state_streams.values():
+            stream.send_message(updated_game_state)
+
+        # Start streaming game state updates to the joining player
+        for game_state in self._generate_game_updates():
+            yield game_state
+
+
+    def SendAction(self, request, context):
+        logging.info(f"Received action from player {request.player_id}: {request.action_type}")
+        # Process player action and update game state
+        # ... (Implement game logic here)
+
+        # Broadcast updated game state to all players
+        updated_game_state = self._create_game_state_message()
+        for stream in self._game_state_streams.values():
+            stream.send_message(updated_game_state)
+
+        return zace_tank_battle_pb2.Empty()
+
+    # Helper methods for game state management
+    def _generate_game_updates(self):
         while True:
-            data = client_socket.recv(1024).decode()
-            if not data:
-                break
+            yield self._create_game_state_message()
 
-            print(f"Request from {address}: {data}")
+    def _create_game_state_message(self):
+        game_state = zace_tank_battle_pb2.GameState(
+            tanks=list(self.player_tanks.values()),
+            bullets=[],  # Replace with actual bullet data
+            walls=[],  # Replace with actual wall data
+            scores=self._calculate_scores(),
+        )
+        return game_state
 
-            command, *args = data.split()
-            response = handle_command(command, args, client_socket)
+    # ... (Other helper methods)
 
-            client_socket.sendall(response.encode())
-    except Exception as e:
-        print(f"Error handling client: {e}")
-    finally:
-        try:
-            remove_client_from_queues(client_socket)
-            client_socket.close()
-            print(f"Client {address} disconnected")
-        except Exception as e:
-            print(f"Error closing client socket: {e}")
+    def _find_spawn_point(self):
+        while True:
+            # Generate random cell coordinates within the map area
+            cell_x = random.randint(0, 31)  # 32 cells wide
+            cell_y = random.randint(0, 31)  # 24 cells tall for the map
 
-def handle_command(command, args, client_socket):
-    if command == "get_open_queues":
-        return json.dumps({"queues": list(queues.keys())})
+            # Convert cell coordinates to pixel coordinates
+            spawn_x = cell_x * CELL_SIZE  # Center of the cell
+            spawn_y = cell_y * CELL_SIZE
 
-    elif command == "get_queue_info":
-        queue_data = {}
+            # Check if the spawn point is valid (not occupied by walls or other tanks)
+            if not self._is_occupied(spawn_x, spawn_y):
+                return zace_tank_battle_pb2.Point(x=spawn_x, y=spawn_y)
 
-        queue_id = args[0]
-        queue = queues.get(queue_id, {"error": "Queue not found"})
 
-        if "error" not in queue:
-            queue_data = {
-                "users": [{"name": user["name"]} for user in queue["users"]],  # Exclude sockets
-                "ready_status": queue["ready_status"],
-            }
+    def _is_occupied(self, x, y):
+        """Checks if a given point on the map is occupied by a wall or another tank."""
 
-        return json.dumps(queue_data)
+        # Check for collisions with walls (using the generated wall coordinates)
+        for row in range(len(self.map_grid)):
+            for col in range(len(self.map_grid[0])):
+                if self.map_grid[row][col] == "wall" and x == col * CELL_SIZE and y == row * CELL_SIZE:
+                    return True
 
-    elif command == "create_queue":
-        queue_id = str(len(queues) + 1)
-        queues[queue_id] = {"users": [], "ready_status": [], "owner": client_socket}
-        return json.dumps({"queue_id": queue_id})
+        # Check for collisions with other tanks (remains the same)
+        for tank in self.player_tanks.values():
+            if tank.position.x == x and tank.position.y == y:
+                return True
 
-    elif command == "join_queue":
-        queue_id = args[0]
-        name = args[1]
-        queues[queue_id]["users"].append({"name": name, "socket": client_socket})
-        queues[queue_id]["ready_status"].append(False)
-        return json.dumps({"message": "Joined queue successfully"})
+        return False 
 
-    elif command == "leave_queue":
-        queue_id = args[0]
-        remove_user_from_queue(queue_id, client_socket)
-        if not queues[queue_id]["users"]:
-            del queues[queue_id]
-        return json.dumps({"message": "Left queue successfully"})
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    elif command == "ready":
-        queue_id = args[0]
-        mark_user_ready(queue_id, client_socket)
-        return json.dumps({"message": "Marked as ready"})
-        
-    else:
-        return json.dumps({"error": "Invalid command"})
+# Create a gRPC server
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
-def remove_user_from_queue(queue_id, client_socket):
-    for i, user in enumerate(queues[queue_id]["users"]):
-        if user["socket"] == client_socket:
-            del queues[queue_id]["users"][i]
-            del queues[queue_id]["ready_status"][i]
-            break
+# Add the TankBattleServicer to the server
+zace_tank_battle_pb2_grpc.add_TankBattleServiceServicer_to_server(TankBattleServicer(), server)
 
-def mark_user_ready(queue_id, client_socket):
-    for i, user in enumerate(queues[queue_id]["users"]):
-        if user["socket"] == client_socket:
-            queues[queue_id]["ready_status"][i] = True
-            break
-
-def remove_client_from_queues(client_socket):
-    for queue_id, queue_data in queues.items():
-        if queue_data["owner"] == client_socket:
-            del queues[queue_id]
-            print(f"Queue {queue_id} removed due to owner disconnection")
-            break
-        else:
-            remove_user_from_queue(queue_id, client_socket)
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print(f"Server listening on {HOST}:{PORT}")
-
-    while True:
-        conn, addr = s.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
+# Start the server
+server.add_insecure_port('[::]:65432')  # Bind to all interfaces on port 65432
+server.start()
+logging.info(f"Server started on port %d" % 65432)
+server.wait_for_termination()

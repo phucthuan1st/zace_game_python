@@ -1,10 +1,14 @@
-import socket
-import json
 import pygame
 import pygame_gui
-from pygame import sprite
+
 from .base_state import BaseState
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BUTTON_HEIGHT, BUTTON_SPACING
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BUTTON_HEIGHT, BUTTON_SPACING, SERVER_ADDRESS, CELL_SIZE
+
+import grpc
+import zace_tank_battle_pb2
+import zace_tank_battle_pb2_grpc
+
+from assets.Sprites import *
 
 class GameState(BaseState):
     def __init__(self, ui_manager, player_name, volume_percent, server_address):
@@ -12,8 +16,11 @@ class GameState(BaseState):
         self.volume_percent = volume_percent
         self.server_address = server_address
         self.ui_manager = ui_manager
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect(self.server_address)
+
+        # Create a gRPC channel and stub
+        host, port = SERVER_ADDRESS
+        channel = grpc.insecure_channel(f'{host}:{port}')  # Adjust server address if needed
+        self.stub = zace_tank_battle_pb2_grpc.TankBattleServiceStub(channel)
 
         # Create UIPanel covering the entire screen
         panel_width = SCREEN_WIDTH
@@ -25,59 +32,50 @@ class GameState(BaseState):
             object_id="game_panel",
         )
 
-        # Create buttons within the panel
-        button_y = panel_height // 2 - (BUTTON_HEIGHT + BUTTON_SPACING) // 2
-
-        self.create_room_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(panel_width // 4 - 100, button_y, 200, BUTTON_HEIGHT),
-            text="Create New Room",
-            manager=self.ui_manager,
-            container=self.game_panel,
-            object_id="create_room_button",
-        )
-
-        self.enter_room_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(panel_width // 2 - 100, button_y, 200, BUTTON_HEIGHT),
-            text="Enter a Room",
-            manager=self.ui_manager,
-            container=self.game_panel,
-            object_id="enter_room_button",
-        )
+        BUTTON_WIDTH = 200
 
         self.exit_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(panel_width * 3 // 4 - 100, button_y, 200, BUTTON_HEIGHT),
+            relative_rect=pygame.Rect(SCREEN_WIDTH - BUTTON_WIDTH, 0, BUTTON_WIDTH, BUTTON_HEIGHT),
             text="Exit",
             manager=self.ui_manager,
             container=self.game_panel,
             object_id="exit_button",
         )
 
+        score_board_panel = pygame_gui.elements.UIPanel(
+            relative_rect=pygame.Rect(
+                CELL_SIZE * 24, 
+                BUTTON_HEIGHT, 
+                SCREEN_WIDTH - CELL_SIZE * 24, 
+                SCREEN_HEIGHT - BUTTON_HEIGHT
+            ),
+            manager=self.ui_manager,
+            container=self.game_panel,
+            object_id="score_board",
+        )
+
+        map_grid_response = self.stub.GetMapGrid(zace_tank_battle_pb2.Empty())
+
+        map_grid = []
+        for row in map_grid_response.rows:
+            cells = row.cells
+
+            map_row_cells = []
+            for cell in cells:
+                map_row_cells.append(cell)
+
+            map_grid.append(map_row_cells)
+
+        map_grid_sprite = MapGrid(map_grid)
+        map_grid_sprite.create_map()  # Generate the map using the received map grid
+
+        self.map_group = pygame.sprite.Group()
+        self.map_group.add(map_grid_sprite)
+
     def update(self, dt):
         self.ui_manager.update(time_delta=dt)
-
+        self.map_group.update(time_delta=dt)
 
     def render(self, screen):
         self.ui_manager.draw_ui(screen)
-
-    def handle_create_room(self):
-        try:
-            self.client_socket.sendall(b"create_queue")
-            response = self.client_socket.recv(1024).decode()
-            response_data = json.loads(response)
-            queue_id = response_data["queue_id"]
-
-            # Handle successful queue creation (e.g., display a message or transition to a room state)
-            if queue_id is not None:
-                print(f"Created queue with ID: {queue_id}")
-
-                command = f"join_queue {queue_id} {self.player_name}"
-                self.client_socket.sendall(command.encode())
-                response = self.client_socket.recv(1024).decode()
-                response_data = json.loads(response)
-
-            # Example: Transition to a room state
-            pygame.event.post(pygame.event.Event(pygame.USEREVENT, {"state":"RoomState", "queue_id":queue_id}))
-
-        except Exception as e:
-            print(f"Error creating queue: {e}")
-            # Handle errors (e.g., display an error message)
+        self.map_group.draw(screen)

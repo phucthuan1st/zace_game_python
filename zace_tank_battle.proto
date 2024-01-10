@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package zace_tank_battle;
+
+// Represents a point on the map
+message Point {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// Represents a tank's information
+message Tank {
+  int32 id = 1;
+  Point position = 2;
+  string player_name = 3;
+  int32 health = 4;
+  string direction = 5; // e.g., "up", "down", "left", "right"
+}
+
+// Represents a bullet's information
+message Bullet {
+  Point position = 1;
+  string direction = 2;
+  int32 owner_id = 3; // ID of the player who fired the bullet
+}
+
+// Represents the current game state
+message GameState {
+  repeated Tank tanks = 1;
+  repeated Bullet bullets = 2;
+  repeated Point walls = 3;     // Positions of walls on the map
+  map<int32, int32> scores = 4; // Player IDs and their scores
+}
+
+// Represents a player action
+message PlayerAction {
+  int32 player_id = 1;
+  string action_type = 2;        // e.g., "move", "shoot", "chat"
+  optional string direction = 3; // Optional direction for movement or shooting
+  optional string message = 4;   // Optional chat message
+}
+
+message MapGrid { repeated Row rows = 1; }
+
+message Row { repeated string cells = 1; }
+
+message PlayerJoinRequest { string player_name = 1; }
+
+message Empty {}
+
+service TankBattleService {
+  rpc GetMapGrid(Empty) returns (MapGrid) {}
+  rpc JoinGame(PlayerJoinRequest) returns (stream GameState) {}
+  rpc SendAction(PlayerAction) returns (Empty) {}
+}
