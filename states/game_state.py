@@ -1,6 +1,8 @@
 import pygame
 import pygame_gui
 import json
+import hashlib
+
 
 from .base_state import BaseState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BUTTON_HEIGHT, BUTTON_SPACING, SERVER_ADDRESS, CELL_SIZE
@@ -23,8 +25,8 @@ class GameState(BaseState):
 
         # Create a gRPC channel and stub
         host, port = SERVER_ADDRESS
-        channel = grpc.insecure_channel(f'{host}:{port}')  # Adjust server address if needed
-        self.stub = zace_tank_battle_pb2_grpc.TankBattleServiceStub(channel)
+        self.channel = grpc.insecure_channel(f'{host}:{port}')  # Adjust server address if needed
+        self.stub = zace_tank_battle_pb2_grpc.TankBattleServiceStub(self.channel)
 
         # Create UIPanel covering the entire screen
         panel_width = SCREEN_WIDTH
@@ -86,6 +88,14 @@ class GameState(BaseState):
         with open("assets/gdm-top-down-sci-fi-tanks/sprite_sheet.json", "r") as json_file:
             self.sprite_sheet_data = json.load(json_file)
 
+        self.key_mapping = {
+            pygame.K_w: "up",
+            pygame.K_a: "left",
+            pygame.K_s: "down",
+            pygame.K_d: "right",
+            pygame.K_SPACE: "shoot",
+        }
+
     def process_match_state(self, match_state):
         # Process the received game state
         for tank in match_state.tanks:
@@ -110,11 +120,12 @@ class GameState(BaseState):
     def update(self, dt):
         self.ui_manager.update(time_delta=dt)
         self.map_group.update(time_delta=dt)
-
+        self.tank_group.empty()
         try:
             # Get the initial game state after joining
             self.match_state = next(self.game_stream)
             self.process_match_state(self.match_state)
+            self.tank_group.update(time_delta=dt)
         except grpc.RpcError as e:
             print(f"Error during game streaming: {e}")
 
@@ -122,3 +133,22 @@ class GameState(BaseState):
         self.ui_manager.draw_ui(screen)
         self.map_group.draw(screen)
         self.tank_group.draw(screen)
+
+    def handle_keypress(self, key):
+        if key != pygame.K_SPACE:
+
+            try:
+                direction = self.key_mapping[key]
+            except KeyError:
+                return
+
+            # Generate player_id as SHA-256 hash of player_name
+            player_name_bytes = self.player_name.encode('utf-8')
+            player_id = hashlib.sha256(player_name_bytes).hexdigest()
+            # Send the move action to the server
+            move_action = zace_tank_battle_pb2.PlayerAction(
+                player_id=player_id,
+                action_type="move",
+                direction=direction
+            )
+            self.stub.SendAction(move_action)

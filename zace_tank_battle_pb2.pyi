@@ -20,12 +20,12 @@ class Tank(_message.Message):
     PLAYER_NAME_FIELD_NUMBER: _ClassVar[int]
     HEALTH_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
-    id: int
+    id: str
     position: Point
     player_name: str
     health: int
     direction: str
-    def __init__(self, id: _Optional[int] = ..., position: _Optional[_Union[Point, _Mapping]] = ..., player_name: _Optional[str] = ..., health: _Optional[int] = ..., direction: _Optional[str] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., position: _Optional[_Union[Point, _Mapping]] = ..., player_name: _Optional[str] = ..., health: _Optional[int] = ..., direction: _Optional[str] = ...) -> None: ...
 
 class Bullet(_message.Message):
     __slots__ = ("position", "direction", "owner_id")
@@ -34,8 +34,8 @@ class Bullet(_message.Message):
     OWNER_ID_FIELD_NUMBER: _ClassVar[int]
     position: Point
     direction: str
-    owner_id: int
-    def __init__(self, position: _Optional[_Union[Point, _Mapping]] = ..., direction: _Optional[str] = ..., owner_id: _Optional[int] = ...) -> None: ...
+    owner_id: str
+    def __init__(self, position: _Optional[_Union[Point, _Mapping]] = ..., direction: _Optional[str] = ..., owner_id: _Optional[str] = ...) -> None: ...
 
 class GameState(_message.Message):
     __slots__ = ("tanks", "bullets", "walls", "scores")
@@ -62,11 +62,11 @@ class PlayerAction(_message.Message):
     ACTION_TYPE_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    player_id: int
+    player_id: str
     action_type: str
     direction: str
     message: str
-    def __init__(self, player_id: _Optional[int] = ..., action_type: _Optional[str] = ..., direction: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, player_id: _Optional[str] = ..., action_type: _Optional[str] = ..., direction: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
 
 class MapGrid(_message.Message):
     __slots__ = ("rows",)

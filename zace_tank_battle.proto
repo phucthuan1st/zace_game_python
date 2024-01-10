@@ -10,7 +10,7 @@ message Point {
 
 // Represents a tank's information
 message Tank {
-  int32 id = 1;
+  string id = 1;
   Point position = 2;
   string player_name = 3;
   int32 health = 4;
@@ -21,7 +21,7 @@ message Tank {
 message Bullet {
   Point position = 1;
   string direction = 2;
-  int32 owner_id = 3; // ID of the player who fired the bullet
+  string owner_id = 3; // ID of the player who fired the bullet
 }
 
 // Represents the current game state
@@ -34,7 +34,7 @@ message GameState {
 
 // Represents a player action
 message PlayerAction {
-  int32 player_id = 1;
+  string player_id = 1;
   string action_type = 2;        // e.g., "move", "shoot", "chat"
   optional string direction = 3; // Optional direction for movement or shooting
   optional string message = 4;   // Optional chat message

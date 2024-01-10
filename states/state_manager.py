@@ -43,6 +43,8 @@ class StateManager:
                     pass
                 else:
                     self.change_state(new_state)
+        if event.type == pygame.KEYDOWN and isinstance(self.current_state, GameState):
+            self.current_state.handle_keypress(event.key)
         elif event.type == pygame.QUIT:
             self.is_running = False
 
@@ -83,6 +85,7 @@ class StateManager:
         elif event.ui_object_id == "game_panel.exit_button":
             # cleanup
             game_state = self.current_state
+            game_state.channel.close()
             game_state.game_panel.kill()
             del game_state
 

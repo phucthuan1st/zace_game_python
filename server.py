@@ -4,6 +4,8 @@ import random
 import time
 from concurrent import futures
 
+import hashlib
+
 from helpers.generate_map import generate_map
 
 import zace_tank_battle_pb2
@@ -29,7 +31,6 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         self.map_grid = generate_map(SCREEN_HEIGHT // CELL_SIZE, SCREEN_HEIGHT // CELL_SIZE)
         self.game_state = MatchState()  # Centralized game state
         self.player_tanks = {}
-        self.next_player_id = 1
         self._game_state_streams = {}  # Track open player streams
 
     def GetMapGrid(self, request, context):
@@ -41,8 +42,9 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         return map_grid_message
 
     def JoinGame(self, request, context):
-        player_id = self.next_player_id
-        self.next_player_id += 1
+        # Generate player_id as SHA-256 hash of player_name
+        player_name_bytes = request.player_name.encode('utf-8')
+        player_id = hashlib.sha256(player_name_bytes).hexdigest()
 
         player_tank = zace_tank_battle_pb2.Tank(
             id=player_id,
@@ -53,6 +55,9 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         )
 
         self.player_tanks[player_id] = player_tank
+
+         # Log player join information
+        logging.info(f"Player joined: Player ID - {player_id}, Player Name - {request.player_name}")
 
         # Construct and return the initial game state
         initial_game_state = self.construct_game_state()
@@ -111,13 +116,35 @@ class TankBattleServicer(zace_tank_battle_pb2_grpc.TankBattleService):
         # ...
 
         # Return an empty response
-        return Empty()
+        return zace_tank_battle_pb2.Empty()
 
     def move_tank(self, player_id, direction):
-        # Implement tank movement logic
-        # Update the tank's position in the game state
-        # ...
-        pass
+        if player_id in self.player_tanks:
+            tank = self.player_tanks[player_id]
+
+            # Calculate the new position based on the provided direction
+            new_x, new_y = tank.position.x, tank.position.y
+
+            if direction == "up":
+                new_y -= CELL_SIZE
+            elif direction == "down":
+                new_y += CELL_SIZE
+            elif direction == "left":
+                new_x -= CELL_SIZE
+            elif direction == "right":
+                new_x += CELL_SIZE
+
+            # Check if the new position is within the valid map area
+            valid_x = 0 <= new_x < (NUMBER_OF_CELL) * CELL_SIZE
+            valid_y = 0 <= new_y < (NUMBER_OF_CELL) * CELL_SIZE
+
+            if valid_x and valid_y and not self._is_occupied(new_x, new_y):
+                # Update the tank's position
+                tank.position.x = new_x
+                tank.position.y = new_y
+
+                # You may want to update other properties of the tank (e.g., direction) if needed
+                tank.direction = direction
 
     def shoot_bullet(self, player_id, direction):
         # Implement bullet shooting logic
