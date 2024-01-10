@@ -36,3 +36,9 @@ class MapGrid(pygame.sprite.Sprite):
 
         # Render the cells onto the MapGrid's image
         self.cells.draw(self.image)
+
+class TankSprite(pygame.sprite.Sprite):
+    def __init__(self, surface, pos_x, pos_y):
+        super().__init__()
+        self.image = pygame.transform.scale(surface, (CELL_SIZE, CELL_SIZE))
+        self.rect = self.image.get_rect(topleft=(pos_x, pos_y))

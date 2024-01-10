@@ -32,6 +32,13 @@ def generate_map(width, height, tile_density=0.7):
                         new_grid[row].append("wall")
         grid = new_grid
 
+    # Additional check to prevent inaccessible tiles
+    for row in range(height):
+        for col in range(width):
+            if grid[row][col] == "tile":
+                if count_neighbors(grid, row, col) == 8:  # All neighbors are walls
+                    grid[row][col] = "wall"
+
     return grid
 
 

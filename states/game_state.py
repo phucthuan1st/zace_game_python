@@ -1,8 +1,10 @@
 import pygame
 import pygame_gui
+import json
 
 from .base_state import BaseState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, BUTTON_HEIGHT, BUTTON_SPACING, SERVER_ADDRESS, CELL_SIZE
+from assets.Spritesheet import SpriteSheet
 
 import grpc
 import zace_tank_battle_pb2
@@ -16,6 +18,8 @@ class GameState(BaseState):
         self.volume_percent = volume_percent
         self.server_address = server_address
         self.ui_manager = ui_manager
+        self.tank_group = pygame.sprite.Group()
+        self.map_group = pygame.sprite.Group()
 
         # Create a gRPC channel and stub
         host, port = SERVER_ADDRESS
@@ -42,11 +46,13 @@ class GameState(BaseState):
             object_id="exit_button",
         )
 
+        NUMBER_OF_CELL = SCREEN_HEIGHT // CELL_SIZE
+
         score_board_panel = pygame_gui.elements.UIPanel(
             relative_rect=pygame.Rect(
-                CELL_SIZE * 24, 
+                CELL_SIZE * NUMBER_OF_CELL, 
                 BUTTON_HEIGHT, 
-                SCREEN_WIDTH - CELL_SIZE * 24, 
+                SCREEN_WIDTH - CELL_SIZE * NUMBER_OF_CELL, 
                 SCREEN_HEIGHT - BUTTON_HEIGHT
             ),
             manager=self.ui_manager,
@@ -69,13 +75,50 @@ class GameState(BaseState):
         map_grid_sprite = MapGrid(map_grid)
         map_grid_sprite.create_map()  # Generate the map using the received map grid
 
-        self.map_group = pygame.sprite.Group()
         self.map_group.add(map_grid_sprite)
+
+        join_request = zace_tank_battle_pb2.PlayerJoinRequest(player_name=self.player_name)
+        self.game_stream = self.stub.JoinGame(join_request)
+
+        self.spriteSheet = SpriteSheet("assets/gdm-top-down-sci-fi-tanks/Tanks.png")
+
+        # Load sprite_sheet.json
+        with open("assets/gdm-top-down-sci-fi-tanks/sprite_sheet.json", "r") as json_file:
+            self.sprite_sheet_data = json.load(json_file)
+
+    def process_match_state(self, match_state):
+        # Process the received game state
+        for tank in match_state.tanks:
+
+            # Get the rect for the 'tier1_prototype' sprite
+            sprite_data = self.sprite_sheet_data["tier1_prototype"]
+
+            # Create a surface with the specified rect from the sprite sheet
+            tank_surface = self.spriteSheet.get_sprite(
+                sprite_data["rect"]["x"], 
+                sprite_data["rect"]["y"],
+                sprite_data["rect"]["width"], 
+                sprite_data["rect"]["height"]
+            )
+
+            # Resize the tank sprite if needed
+            tank_surface = pygame.transform.scale(tank_surface, (CELL_SIZE, CELL_SIZE))
+
+            # Display the tank sprite on the screen
+            self.tank_group.add(TankSprite(tank_surface, tank.position.x, tank.position.y))
 
     def update(self, dt):
         self.ui_manager.update(time_delta=dt)
         self.map_group.update(time_delta=dt)
 
+        try:
+            # Get the initial game state after joining
+            self.match_state = next(self.game_stream)
+            self.process_match_state(self.match_state)
+        except grpc.RpcError as e:
+            print(f"Error during game streaming: {e}")
+
     def render(self, screen):
         self.ui_manager.draw_ui(screen)
         self.map_group.draw(screen)
+        self.tank_group.draw(screen)
